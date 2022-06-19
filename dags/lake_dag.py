@@ -1,9 +1,15 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 
 from airflow import DAG
 from airflow.operators.python import PythonOperator, BranchPythonOperator
+
 from airflow.operators.bash import BashOperator
 
+from lib.imdb_fetcher import fetch_data_from_imdb
+from lib.raw_to_fmt_imdb import convert_raw_to_formatted_imdb
+from lib.data_fetcher import fetch_data_from_kaagle
+from lib.combine_data import combine_data_imdb
+from lib.raw_to_fmt_kaagle import convert_raw_to_formatted_kaagle
 
 with DAG(
        'lake_dag',
@@ -26,48 +32,29 @@ with DAG(
        I can write documentation in Markdown here with **bold text** or __bold text__.
    """
 
-    def source_1():
-        print(1)
-
-    def source_2():
-        print(2)
-
-    def raw_1():
-        print(3)
-
-    def raw_2():
-        print(4)
-
-    def procedure_e():
-        print(5)
-
-    def index_elastic():
-        print(6)
-
-
     s1 = PythonOperator(
         task_id ='sourceToRaw-1',
-        python_callable = source_1,
+        python_callable = fetch_data_from_kaagle(url='mpwolke/cusersmarildownloadscinemacsv', data_entity_name="MoviePercent", file_name="cinema.csv"),
     )
 
     s2 = PythonOperator(
         task_id ='sourceToRaw-2',
-        python_callable = source_2,
+        python_callable = fetch_data_from_imdb(url='https://datasets.imdbws.com/title.ratings.tsv.gz', data_entity_name = 'MovieRating', file_name ='title.ratings.tsv.gz'),
     )
 
     r1 = PythonOperator(
         task_id='rawToFormatted-1',
-        python_callable=raw_1,
+        python_callable=convert_raw_to_formatted_kaagle(file_name='cinema.csv', current_day=date.today().strftime("%Y%m%d")),
     )
 
     r2 = PythonOperator(
         task_id ='rawToFormatted-2',
-        python_callable = raw_2,
+        python_callable = convert_raw_to_formatted_imdb(file_name = "title.ratings.tsv.gz", current_day=date.today().strftime("%Y%m%d")),
     )
 
     p = PythonOperator(
         task_id ='procedure-Usage',
-        python_callable = procedure_e,
+        python_callable = combine_data_imdb(current_day=date.today().strftime("%Y%m%d")),
     )
 
     i = PythonOperator(

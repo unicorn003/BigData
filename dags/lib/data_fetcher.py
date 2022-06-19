@@ -1,30 +1,21 @@
-import json
-from datetime import date
 import os
+import requests
+from kaggle.api.kaggle_api_extended import KaggleApi
+from datetime import date
 
-from searchtweets import gen_request_parameters, load_credentials, collect_results
-
+api_my = KaggleApi()
+api_my.authenticate()
 HOME = os.path.expanduser('~')
 DATALAKE_ROOT_FOLDER = HOME + "/datalake/"
 
 
-def fetch_data_from_twitter(**kwargs):
-   tweets = query_data_from_twitter()
-   store_twitter_data(tweets)
-
-
-def query_data_from_twitter():
-   query = gen_request_parameters("#cinema", None, results_per_call=100)
-   print("We are getting data from Twitter ...", query)
-   search_args = load_credentials("~/.twitter_keys.yaml", yaml_key="search_tweets_v2", env_overwrite=False)
-   return collect_results(query, max_tweets=100, result_stream_args=search_args)
-
-
-def store_twitter_data(tweets):
+def fetch_data_from_kaagle(url, data_entity_name, file_name):
+   api_my.dataset_download_file(url, file_name=file_name)
    current_day = date.today().strftime("%Y%m%d")
-   TARGET_PATH = DATALAKE_ROOT_FOLDER + "raw/twitter/Movie/" + current_day + "/"
+   TARGET_PATH = DATALAKE_ROOT_FOLDER + "raw/kaagle/" + "/" + data_entity_name + "/" + current_day + "/"
    if not os.path.exists(TARGET_PATH):
        os.makedirs(TARGET_PATH)
-   print("Writing here: ", TARGET_PATH)
-   f = open(TARGET_PATH + "twitter.json", "w+")
-   f.write(json.dumps(tweets, indent=4))
+
+
+   r = requests.get(url, allow_redirects=True)
+   open(TARGET_PATH + file_name, 'wb').write(file_name)
